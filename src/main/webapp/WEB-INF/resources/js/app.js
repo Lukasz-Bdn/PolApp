@@ -73,7 +73,8 @@ $(function () {
                             '</div>'
                     });
                     ongoingPolls.append('<div class="text-white bg-secondary mb-3" style="max-width: 40rem;"><div class="card-header">' +
-                        poll.question +
+                        poll.question + 
+                        ' <a href="http://wikipedia.org"><span class="badge badge-danger">Report</span></a>' +
                         '</div><div class="card-body">' +
                         '<fieldset class="form-group">' +
                         pollAnswers +
