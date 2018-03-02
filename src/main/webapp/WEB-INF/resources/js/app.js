@@ -74,11 +74,33 @@ $(function () {
                     });
                     ongoingPolls.append('<div class="text-white bg-secondary mb-3" style="max-width: 40rem;"><div class="card-header">' +
                         poll.question + 
-                        ' <a href="http://wikipedia.org"><span class="badge badge-danger">Report</span></a>' +
+                        '<button type="button" class="badge badge-danger" data-toggle="modal" data-target="#report'+ 
+                        poll.id+'">' +
+                        'Report' +
+                        '</button>' +
                         '</div><div class="card-body">' +
                         '<fieldset class="form-group">' +
                         pollAnswers +
-                        '</fieldset></div></div>');
+                        '</fieldset></div></div>' +
+//                      Report modal heading
+                        '<div class="modal fade" id="report'+ poll.id+'">' +
+                    	'<div class="modal-dialog">' +
+                    	'<div class="modal-content">' +
+                        '<div class="modal-header">' +
+                          '<h4 class="modal-title">'+poll.question+'</h4>' +
+                          '<button type="button" class="close" data-dismiss="modal">&times;</button>' +
+                        '</div>' +
+//                        Report modal body
+                        '<div class="modal-body">' +
+                        'Please indicate why you think this content is inappropriate:' +
+                        '</div>' +
+//                        Report modal footer
+                        '<div class="modal-footer">' +
+                    	'<button type="button" class="btn btn-info" data-dismiss="modal">Report</button>' +
+                        '<button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>' +
+                    	'</div>'
+
+                    );
                 });
             })
         });
