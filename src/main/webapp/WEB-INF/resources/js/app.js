@@ -107,7 +107,25 @@ $(function () {
                         '</div><div class="card-header">' +
                         '<div>Time left:</div>' +
                         '<div id="clock' + poll.id + '"></div>' +
-                        '</div></div>');
+                        '</div></div>' +
+//                      Report modal heading
+                        '<div class="modal fade" id="report'+ poll.id+'">' +
+                    	'<div class="modal-dialog">' +
+                    	'<div class="modal-content">' +
+                        '<div class="modal-header">' +
+                          '<h4 class="modal-title">'+poll.question+'</h4>' +
+                          '<button type="button" class="close" data-dismiss="modal">&times;</button>' +
+                        '</div>' +
+//                        Report modal body
+                        '<div class="modal-body">' +
+                        'Please indicate why you think this content is inappropriate:' +
+                        '</div>' +
+//                        Report modal footer
+                        '<div class="modal-footer">' +
+                    	'<button type="button" class="btn btn-info" data-dismiss="modal">Report</button>' +
+                        '<button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>' +
+                    	'</div>'                    
+                    );
 
                     var getClock = setInterval(function () {
                         var now = new Date().getTime();
@@ -120,6 +138,8 @@ $(function () {
                         var clock = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's ';
                         if (document.getElementById("clock" + poll.id) !== null) {
                             document.getElementById("clock" + poll.id).innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+                            document.getElementById("clock" + poll.id).innerHTML += "<button type='button' class='btn btn-danger btn-sm report' " +
+                            "data-toggle='modal' data-target='#report"+poll.id+"'> Report</button>";
                         }
                     }, 1000);
                 });

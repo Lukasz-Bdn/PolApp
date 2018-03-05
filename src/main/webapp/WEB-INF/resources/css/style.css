@@ -2,3 +2,13 @@
   display: none;
   /* visibility: hidden; */
 } 
+
+.report {
+	padding: 0;
+	margin: 0;
+	float: right;
+	height: 3em;
+	font-size: 0.6em;
+/*	margin-bottom: 5%;
+	margin-right:5%;
+*/}
