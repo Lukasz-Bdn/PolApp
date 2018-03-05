@@ -2,13 +2,13 @@ package com.pollapp.controller;
 
 import com.pollapp.entity.Category;
 import com.pollapp.repository.CategoryRepository;
-import com.pollapp.repository.PollRepository;
 import com.pollapp.response.PollResponse;
-import com.pollapp.response.process.PollProcess;
+import com.pollapp.service.PollService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -16,13 +16,10 @@ import java.util.List;
 public class CategoryController {
 
     @Autowired
+    private PollService pollService;
+
+    @Autowired
     private CategoryRepository categoryRepository;
-
-    @Autowired
-    private PollRepository pollRepository;
-
-    @Autowired
-    private PollProcess pollProcess;
 
     @GetMapping("")
     public List<Category> getCategories() {
@@ -52,10 +49,22 @@ public class CategoryController {
     }
 
     @GetMapping("/{categoryId}/polls")
-    public List<PollResponse> getPollsByCategory(@PathVariable int categoryId) {
-        List<PollResponse> response = new ArrayList<>();
-        pollRepository.findAllByCategoriesId(categoryId).forEach(poll ->
-                response.add(new PollResponse(poll, pollProcess.process(poll))));
-        return response;
+    public Page<PollResponse> getAllPollsByCategory(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size, @PathVariable int categoryId) {
+        return pollService.getPollsByCategory(categoryId, new PageRequest(page, size));
+    }
+
+    @GetMapping("/{categoryId}/polls/closed")
+    public Page<PollResponse> getClosedPollsByCategory(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size, @PathVariable int categoryId) {
+        return pollService.getClosedPollsByCategory(categoryId, new PageRequest(page, size));
+    }
+
+    @GetMapping("/{categoryId}/polls/ongoing")
+    public Page<PollResponse> getOngoingPollsByCategory(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size, @PathVariable int categoryId) {
+        return pollService.getOnGoingPollsByCategory(categoryId, new PageRequest(page, size));
+    }
+
+    @GetMapping("/{categoryId}/polls/available")
+    public Page<PollResponse> getAvailablePollsByCategory(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size, @PathVariable int categoryId) {
+        return pollService.getAvailablePollsByCategory(categoryId, new PageRequest(page, size));
     }
 }

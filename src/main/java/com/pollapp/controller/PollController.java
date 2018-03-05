@@ -5,21 +5,25 @@ import com.pollapp.entity.Category;
 import com.pollapp.entity.Comment;
 import com.pollapp.entity.Poll;
 import com.pollapp.repository.AnswerRepository;
-import com.pollapp.repository.CategoryRepository;
 import com.pollapp.repository.PollRepository;
 import com.pollapp.response.AnswerResponse;
 import com.pollapp.response.PollResponse;
-import com.pollapp.response.process.AnswerProcess;
-import com.pollapp.response.process.PollProcess;
+import com.pollapp.service.AnswerService;
+import com.pollapp.service.PollService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 @RestController
 @RequestMapping("/polls")
 public class PollController {
+
+    @Autowired
+    private PollService pollService;
 
     @Autowired
     private PollRepository pollRepository;
@@ -28,38 +32,31 @@ public class PollController {
     private AnswerRepository answerRepository;
 
     @Autowired
-    private CategoryRepository categoryRepository;
+    private AnswerService answerService;
 
-    @Autowired
-    private AnswerProcess answerProcess;
-
-    @Autowired
-    private PollProcess pollProcess;
+    @GetMapping("")
+    public Page<PollResponse> getAllPolls(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size) {
+        return pollService.getPolls(new PageRequest(page, size));
+    }
 
     @GetMapping("/ongoing")
-    public List<PollResponse> getOpenedPolls() {
-        List<PollResponse> response = new ArrayList<>();
-        pollRepository.findAll().forEach(poll ->
-                response.add(new PollResponse(poll, pollProcess.process(poll))));
-        return response;
+    public Page<PollResponse> getOpenedPolls(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size) {
+        return pollService.getOnGoingPolls(new PageRequest(page, size));
     }
 
     @GetMapping("/closed")
-    public List<PollResponse> getClosedPolls() {
-        List<PollResponse> response = new ArrayList<>();
-        pollRepository.findAll().forEach(poll ->
-                response.add(new PollResponse(poll, pollProcess.process(poll))));
-        return response;
+    public Page<PollResponse> getClosedPolls(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "5") int size) {
+        return pollService.getClosedPolls(new PageRequest(page, size));
     }
 
     @PostMapping("")
-    public Poll createPoll(@RequestBody Poll poll) {
-        return pollRepository.save(poll);
+    public PollResponse createPoll(@RequestBody Poll poll) {
+        return pollService.save(poll);
     }
 
     @GetMapping("/{pollId}")
-    public Poll getPoll(@PathVariable long pollId) {
-        return pollRepository.findOne(pollId);
+    public PollResponse getPoll(@PathVariable long pollId) {
+        return pollService.getPoll(pollId);
     }
 
     @PutMapping("/{pollId}")
@@ -81,25 +78,32 @@ public class PollController {
     }
 
     @PostMapping("/{pollId}/categories/{categoryId}")
-    public Poll addCategoryToPoll(@PathVariable long pollId, @PathVariable int categoryId) {
+    public PollResponse addCategoryToPoll(@PathVariable long pollId, @PathVariable int categoryId) {
+        return pollService.addCategoryToPoll(pollId, categoryId);
+    }
+
+    @PostMapping("/{pollId}/closed/{days}/{hours}")
+    public Poll addHoursToPoll(@PathVariable long pollId, @PathVariable int days, @PathVariable int hours) {
         Poll poll = pollRepository.findOne(pollId);
-        poll.getCategories().add(categoryRepository.findOne(categoryId));
+        if (days + hours <= 0) {
+            poll.getClosed().add(Calendar.HOUR_OF_DAY, 24);
+        } else {
+            poll.getClosed().add(Calendar.DAY_OF_MONTH, days);
+            poll.getClosed().add(Calendar.HOUR_OF_DAY, hours);
+        }
         return pollRepository.save(poll);
     }
 
     @GetMapping("/{pollId}/answers")
     public List<AnswerResponse> getAnswersByPoll(@PathVariable long pollId) {
-        List<AnswerResponse> response = new ArrayList<>();
-        answerRepository.findByPollId(pollId).forEach(answer ->
-                response.add(new AnswerResponse(answer, answerProcess.process(answer))));
-        return response;
+        return answerService.createAnswerResponseList(answerRepository.findByPollId(pollId));
     }
 
     @PostMapping("/{pollId}/answers")
-    public Answer addAnswerToPoll(@RequestBody Answer answer, @PathVariable long pollId) {
+    public AnswerResponse addAnswerToPoll(@RequestBody Answer answer, @PathVariable long pollId) {
         Poll p = pollRepository.findOne(pollId);
         answer.setPoll(p);
-        return answerRepository.save(answer);
+        return answerService.createAnswerResponse(answerRepository.save(answer));
     }
 
     @GetMapping("/{pollId}/comments")

@@ -5,61 +5,86 @@ $(function () {
     var closedPolls = $('#closedPolls');
     var closedPollsCategories = $('#closedPollsCategories');
     var openPollsCategories = $('#openPollsCategories');
+    var showPolls = $('#showPolls');
     var pollForm = $('#pollForm');
     var answers = $('#answers');
     var categories = $('#all-categories');
     var selectedCategories = $('#selected-categories');
+    var $pagination = $('#pagination-demo');
+    var categoryId = 0;
+    var showPollsAddress = "";
+
+    var defaultOpts = {
+        totalPages: 10,
+        visiblePages: 10,
+        startPage: 1
+    };
+    $pagination.twbsPagination(defaultOpts);
 
     function renderClosedList(endpoint) {
-        closedPolls.empty();
         ajax.ajaxGetCallback(endpoint, function (response) {
-            response.forEach(function (elem) {
-                var poll = elem.poll;
-                var pollData = elem.pollNumberData;
-                var charContent = [];
-                ajax.ajaxGetCallback('/polls/' + poll.id + '/answers', function (response) {
-                    response.forEach(function (elem) {
-                        var answer = elem.answer;
-                        var answerData = elem.answerNumberData;
-                        charContent.push({
-                            y: answerData.percent,
-                            label: answer.content
+            var totalPages = response.totalPages;
+            if (totalPages <= 0) {
+                totalPages = 1;
+            }
+            $pagination.twbsPagination('destroy');
+            $pagination.twbsPagination($.extend({}, defaultOpts, {
+                totalPages: totalPages,
+                onPageClick: function (evt, page) {
+                    closedPolls.empty();
+                    ajax.ajaxGetCallback(endpoint + "?page=" + (page - 1), function (response) {
+                        var data = response.content;
+                        data.forEach(function (elem) {
+                            var poll = elem.poll;
+                            var pollData = elem.pollNumberData;
+                            var charContent = [];
+                            ajax.ajaxGetCallback('/polls/' + poll.id + '/answers', function (response) {
+                                response.forEach(function (elem) {
+                                    var answer = elem.answer;
+                                    var answerData = elem.answerNumberData;
+                                    charContent.push({
+                                        y: answerData.percent,
+                                        label: answer.content
+                                    })
+                                });
+                                closedPolls.append('<div class="card border-danger mb-3" style="max-width: 40rem;">' +
+                                    '<div class="card-header">' +
+                                    poll.question +
+                                    '</div>' +
+                                    '<div class="card-body">' +
+                                    '<div id="chartContainer' + poll.id + '" style="height: 370px; width: 100%;"></div>' +
+                                    '</div></div>');
+                                var chart = new CanvasJS.Chart("chartContainer" + poll.id, {
+                                    animationEnabled: true,
+                                    theme: "light2", // "light1", "light2", "dark1", "dark2"
+                                    title: {
+                                        text: ""
+                                    },
+                                    axisY: {
+                                        title: "%"
+                                    },
+                                    data: [{
+                                        type: "column",
+                                        showInLegend: true,
+                                        legendMarkerColor: "grey",
+                                        legendText: pollData.totalAnswers + " answers",
+                                        dataPoints: charContent
+                                    }]
+                                });
+                                chart.render();
+                            });
                         })
                     });
-                    closedPolls.append('<div class="card border-danger mb-3" style="max-width: 40rem;">' +
-                        '<div class="card-header">' +
-                        poll.question +
-                        '</div>' +
-                        '<div class="card-body">' +
-                        '<div id="chartContainer' + poll.id + '" style="height: 370px; width: 100%;"></div>' +
-                        '</div></div>');
-                    var chart = new CanvasJS.Chart("chartContainer" + poll.id, {
-                        animationEnabled: true,
-                        theme: "light2", // "light1", "light2", "dark1", "dark2"
-                        title: {
-                            text: ""
-                        },
-                        axisY: {
-                            title: "%"
-                        },
-                        data: [{
-                            type: "column",
-                            showInLegend: true,
-                            legendMarkerColor: "grey",
-                            legendText: pollData.totalAnswers + " answers",
-                            dataPoints: charContent
-                        }]
-                    });
-                    chart.render();
-                });
-            })
+                }
+            }));
         });
     }
 
     function renderOpenedList(endpoint) {
         ongoingPolls.empty();
         ajax.ajaxGetCallback(endpoint, function (response) {
-            response.forEach(function (elem) {
+            var content = response.content;
+            content.forEach(function (elem) {
                 var poll = elem.poll;
                 var pollAnswers = '';
                 ajax.ajaxGetCallback('/polls/' + poll.id + '/answers', function (response) {
@@ -72,18 +97,39 @@ $(function () {
                             '</label>' +
                             '</div>'
                     });
+
                     ongoingPolls.append('<div class="text-white bg-secondary mb-3" style="max-width: 40rem;"><div class="card-header">' +
-                        poll.question +
+                        poll.question + '<br\>' +
                         '</div><div class="card-body">' +
                         '<fieldset class="form-group">' +
                         pollAnswers +
-                        '</fieldset></div></div>');
+                        '</fieldset>' +
+                        '</div><div class="card-header">' +
+                        '<div>Time left:</div>' +
+                        '<div id="clock' + poll.id + '"></div>' +
+                        '</div></div>');
+
+                    var getClock = setInterval(function () {
+                        var now = new Date().getTime();
+                        var closed = poll.closed;
+                        var distance = closed - now;
+                        var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                        var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                        var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                        var clock = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's ';
+                        if (document.getElementById("clock" + poll.id) !== null) {
+                            document.getElementById("clock" + poll.id).innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+                        }
+                    }, 1000);
                 });
             })
         });
     }
 
     function renderCategoriesList() {
+        openPollsCategories.append('<a class="dropdown-item category-open" data-category="' + "0" + '" href="#">' + "All" + '</a>');
+        closedPollsCategories.append('<a class="dropdown-item category-closed" data-category="' + "0" + '" href="#">' + "All" + '</a>');
         ajax.ajaxGetCallback('/categories', function (response) {
             response.forEach(function (category) {
                 openPollsCategories.append('<a class="dropdown-item category-open" data-category="' + category.id + '" href="#">' + category.name + '</a>');
@@ -107,27 +153,40 @@ $(function () {
         answer.clone().appendTo(answers);
     }
 
+    showPolls.on('click', function (e) {
+        showPollsAddress = $(e.target).data('address');
+        renderClosedList('/categories/' + categoryId + '/polls/' + showPollsAddress);
+        $('#showPollsButton').html($(e.target).html() + ' POLLS');
+    });
+
     closedPollsCategories.on('click', function (e) {
-        var categoryId = $(e.target).data('category');
-        renderClosedList('/categories/' + categoryId + '/polls');
+        categoryId = $(e.target).data('category');
+        var categoryName = $(e.target).html();
+        renderClosedList('/categories/' + categoryId + '/polls/' + showPollsAddress);
+        $('#closedPollsCategoryButton').html('CATEGORY ' + categoryName);
     });
 
     openPollsCategories.on('click', function (e) {
-        var categoryId = $(e.target).data("category");
-        renderOpenedList('/categories/' + categoryId + '/polls'); //TODO once backend disctinction between closed and opened polls is developed, attach it
+        categoryId = $(e.target).data("category");
+        var categoryName = $(e.target).html();
+        renderOpenedList('/categories/' + categoryId + '/polls/available');
+        $('#ongoingPollsCategoryButton').html('CATEGORY ' + categoryName);
     });
 
     pollForm.on('submit', function (e) {
         e.preventDefault();
         var poll = formUtil.createObjectFromForm($('#poll'));
         var answers = formUtil.createObjectListFromForm($('#answers'));
+        var days = $('#days').children().first().val();
+        var hours = $('#hours').children().first().val();
         ajax.ajaxPostCallback("/polls", poll, function (response) {
             answers.forEach(function (answer) {
-                ajax.ajaxPost("/polls/" + response.id + "/answers", answer)
+                ajax.ajaxPost("/polls/" + response.poll.id + "/answers", answer)
             });
             $('#selected-categories').children().each(function (index, category) {
-                ajax.ajaxPost("/polls/" + response.id + "/categories/" + $(category).data('id'))
+                ajax.ajaxPost("/polls/" + response.poll.id + "/categories/" + $(category).data('id'))
             });
+            ajax.ajaxPost("/polls/" + response.poll.id + "/closed/0" + days + "/0" + hours);
             categories.empty();
             selectedCategories.empty();
             renderCategoriesToSelect();
@@ -162,15 +221,11 @@ $(function () {
     });
 
     ongoingPolls.on('click', '.form-check-input', function (e) {
-        var userData = {};
-        ajax.ajaxPostCallback('/data', userData, function (data) {
-            ajax.ajaxPost('/answers/' + e.target.value + '/data', data);
-        });
+        ajax.ajaxPost('/answers/' + e.target.value + '/data');
         $(this).parents('.text-white').fadeOut();
     });
 
     renderCategoriesList();
-    renderOpenedList('/polls/ongoing');
-    renderClosedList('/polls/closed');
-
+    renderOpenedList('/categories/' + 0 + '/polls/available');
+    renderClosedList('/categories/' + 0 + '/polls');
 });
