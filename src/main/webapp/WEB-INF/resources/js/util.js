@@ -79,6 +79,9 @@ FormUtil.prototype.createObjectFromForm = function (form) {
     $(form).find('input[type!=submit]').each(function (index, elem) {
         object[elem.name] = elem.value;
     });
+    $(form).find('textarea').each(function (index, elem) {
+        object[elem.name] = elem.value;
+    });
     return object;
 };
 

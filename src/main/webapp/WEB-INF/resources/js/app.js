@@ -13,6 +13,7 @@ $(function () {
     var $pagination = $('#pagination-demo');
     var categoryId = 0;
     var showPollsAddress = "";
+    var reportForms =[];
 
     var defaultOpts = {
         totalPages: 10,
@@ -105,26 +106,9 @@ $(function () {
                         pollAnswers +
                         '</fieldset>' +
                         '</div><div class="card-header">' +
-                        '<div>Time left:</div>' +
+                        '<div>Time left: <span id="reportModal' + poll.id + '"></span></div>' +
                         '<div id="clock' + poll.id + '"></div>' +
-                        '</div></div>' +
-//                      Report modal heading
-                        '<div class="modal fade" id="report'+ poll.id+'">' +
-                    	'<div class="modal-dialog">' +
-                    	'<div class="modal-content">' +
-                        '<div class="modal-header">' +
-                          '<h4 class="modal-title">'+poll.question+'</h4>' +
-                          '<button type="button" class="close" data-dismiss="modal">&times;</button>' +
-                        '</div>' +
-//                        Report modal body
-                        '<div class="modal-body">' +
-                        'Please indicate why you think this content is inappropriate:' +
-                        '</div>' +
-//                        Report modal footer
-                        '<div class="modal-footer">' +
-                    	'<button type="button" class="btn btn-info" data-dismiss="modal">Report</button>' +
-                        '<button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>' +
-                    	'</div>'                    
+                        '</div>'
                     );
 
                     var getClock = setInterval(function () {
@@ -138,10 +122,44 @@ $(function () {
                         var clock = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's ';
                         if (document.getElementById("clock" + poll.id) !== null) {
                             document.getElementById("clock" + poll.id).innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
-                            document.getElementById("clock" + poll.id).innerHTML += "<button type='button' class='btn btn-danger btn-sm report' " +
-                            "data-toggle='modal' data-target='#report"+poll.id+"'> Report</button>";
                         }
                     }, 1000);
+
+                    function getReportModal() {
+                        var reportId = "reportModal"+poll.id;
+                        var reportModal = document.getElementById(reportId);
+                        reportModal.innerHTML = "<button type='button' class='btn btn-danger btn-sm report' " +
+                        "data-toggle='modal' data-target='#report"+poll.id+"'> Report</button>" +
+                        '<div class="modal fade text-primary" id="report'+ poll.id+'">' +
+                        '<div class="modal-dialog">' +
+                        '<div class="modal-content">' +
+                        '<div class="modal-header">' +
+                          '<h4 class="modal-title">'+poll.question+'</h4>' +
+                          '<button type="button" class="close" data-dismiss="modal">&times;</button>' +
+                        '</div>' +
+//                        Report modal body
+                        '<div class="modal-body">' +
+                        'Please indicate why you think this content is inappropriate:' +
+                            '<form method="post" id="reportForm'+poll.id+'" data-pollId="'+poll.id+'">' +
+                                '<fieldset>' +
+                                    '<div class="form-group">' +
+                                        '<div id="reportContent'+poll.id+'" class="container">' +
+                                            '<textarea class="form-control" aria-label="With textarea" name="reportReason" id="reportReason'+poll.id+'"></textarea>' +
+                                        '</div>' +
+                                    '</div>' +
+                                    '<div class="container">' +
+                                        '<button type="submit" class="btn btn-info">Submit</button>' +
+                                    '</div>' +
+                                '</fieldset>' +
+                            '</form>' +
+                        '</div>' +
+//                        Report modal footer
+                        '<div class="modal-footer">' +
+                        '</div>' +
+                        '</div>'                    
+                    }
+
+                    getReportModal();
                 });
             })
         });
@@ -243,6 +261,16 @@ $(function () {
     ongoingPolls.on('click', '.form-check-input', function (e) {
         ajax.ajaxPost('/answers/' + e.target.value + '/data');
         $(this).parents('.text-white').fadeOut();
+    });
+
+    $(document).on('submit', 'form[id^="reportForm"]', function(event) {
+        event.preventDefault();
+        var pollId = $(this).attr('data-pollId');
+        var reportContent = formUtil.createObjectFromForm('#reportForm'+ pollId);
+        ajax.ajaxPost('/report/'+pollId, reportContent);
+        $(this).find('textarea').val('');
+        var modalToDismiss = $(this).closest('.modal');
+        modalToDismiss.modal('hide');
     });
 
     renderCategoriesList();
