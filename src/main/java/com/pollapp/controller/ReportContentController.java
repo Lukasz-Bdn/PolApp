@@ -20,10 +20,11 @@ public class ReportContentController {
 
 	
     @PostMapping("/{pollId}")
-    public void reportContent(@PathVariable long pollId, @RequestBody ReportContent reportContent) {
+    public void saveReportContent(@PathVariable long pollId, @RequestBody ReportContent reportContent) {
     	System.out.println("Poszlo " + pollId);
     	System.out.println(reportContent.getReportReason());
     	System.out.println(reportContent.getId());
     	System.out.println(reportContent.getPoll());
+    	reportService.saveReportContent(pollId, reportContent);
     }
 }
